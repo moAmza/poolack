@@ -6,9 +6,12 @@ import dive.poolack.routes.MainRouter
 
 object Runner {
   def main(args: Array[String]): Unit = {
-    
+
     implicit val system = ActorSystem("poolack-http-system")
-    val bindingFuture = Http().newServerAt("0.0.0.0", 8080).bind(MainRouter.route)
+    val bindingFuture =
+      Http()
+        .newServerAt("0.0.0.0", 8080)
+        .bind(MainRouter.route)
     println("Server Running")
   }
 }

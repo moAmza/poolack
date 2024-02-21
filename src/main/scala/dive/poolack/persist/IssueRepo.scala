@@ -18,4 +18,16 @@ object IssueRepo {
 
     Future.successful(data.size)
   }
+
+  def removeIssue(id: String): Future[Option[Issue]] = {
+    val issue = this.synchronized {
+      data.remove(id)
+    }
+
+    Future.successful(issue)
+  }
+
+  def getAllIssues(): Future[List[Issue]] = {
+    Future.successful(data.toList.map(_._2))
+  }
 }
