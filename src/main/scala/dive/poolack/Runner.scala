@@ -3,6 +3,9 @@ package dive.poolack
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import dive.poolack.routes.MainRouter
+import akka.compat.Future
+import scala.concurrent.Future
+import scala.util.Left
 
 object Runner {
   def main(args: Array[String]): Unit = {

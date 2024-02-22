@@ -6,57 +6,48 @@ import akka.http.scaladsl.server.Route
 
 import spray.json.DefaultJsonProtocol._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import dive.poolack.Issue
-import JsonSupport.issueFormat
 import dive.poolack.api.IssueApi
-import scala.util.Success
-import scala.util.Try
-import scala.util.Failure
-import dive.poolack.BaseError
-import dive.poolack.ServerError
-import akka.compat.Future
 import scala.concurrent.Future
-import akka.http.scaladsl.server.RequestContext
-import akka.http.scaladsl.server.RouteResult
-import spray.json._
-import akka.http.scaladsl.marshalling._
+import dive.poolack.routes.ResponseHandler
+import scala.util.Success
+import scala.util.Failure
+import dive.poolack.routes.JsonSupport._
+import dive.poolack.Issue
 
+// I implemented 3 different ways of handling the responses of our api methods. There is a description
+// for each method below. For more details please read comments in IssueApi and ResponseHandler files.
 object MainRouter {
-  private def handleResponse[T](
-      response: => Future[T]
-  ): RequestContext => Future[RouteResult] = {
-    onComplete(response) {
-      _ match {
-        case Success(value) => complete(value)
-        case Failure(exception) =>
-          exception match {
-            case error: BaseError => complete(error)
-            case _                => complete(ServerError())
-          }
-      }
-    }
-  }
   private val apiRoute: Route = pathPrefix("api" / "issues") {
-    pathEnd {
-      post {
-        entity(as[Issue]) { body =>
-          handleResponse(IssueApi.addIssue(body))
+    path("all") {
+      // * First Option: handle the state of each result seperately,
+      //   in my opinion this will lead to a code duplication but we have more control over our responses
+      get {
+        val result = IssueApi.getAllIssues()
+        onComplete(result) {
+          _ match {
+            case Success(value) => complete(value)
+            case Failure(exception) =>
+              complete(ResponseHandler.handleError(exception))
+          }
         }
       }
     } ~ pathEnd {
+      // * Second Option: we can use a global function that handles the errors and execptions
+      // asumming that the result of our issueApi methods are infact the results that we want to
+      // send to our users, this will be much shorter and more efficient
       delete {
         parameters("id") { id =>
-          handleResponse(IssueApi.removeIssue(id))
+          ResponseHandler.handleResponse(IssueApi.removeIssue(id))
         }
       }
-    } ~ pathEnd {
-      get {
-        complete("Hello")
-      }
     } ~
-      path("all") {
-        get {
-          handleResponse(IssueApi.getAllIssues())
+      // * Third Option: we can modify both of the above options and use Future[Either[BaseError, T]] instead of Future[T]
+      // In my opinion this is the best implemntation among the three options.
+      pathEnd {
+        post {
+          entity(as[Issue]) { body =>
+            ResponseHandler.handleEitherResponse(IssueApi.addIssue(body))
+          }
         }
       }
   }
