@@ -13,6 +13,7 @@ import scala.util.Success
 import scala.util.Failure
 import dive.poolack.routes.JsonSupport._
 import dive.poolack.Issue
+import JsonSupport.errorFormat
 
 // I implemented 3 different ways of handling the responses of our api methods. There is a description
 // for each method below. For more details please read comments in IssueApi and ResponseHandler files.
@@ -40,16 +41,22 @@ object MainRouter {
           ResponseHandler.handleResponse(IssueApi.removeIssue(id))
         }
       }
-    } ~
+    } ~ pathEnd {
       // * Third Option: we can modify both of the above options and use Future[Either[BaseError, T]] instead of Future[T]
       // In my opinion this is the best implemntation among the three options.
-      pathEnd {
-        post {
-          entity(as[Issue]) { body =>
-            ResponseHandler.handleEitherResponse(IssueApi.addIssue(body))
-          }
+      post {
+        entity(as[Issue]) { body =>
+          ResponseHandler.handleEitherResponse(IssueApi.addIssue(body))
         }
       }
+    } ~ pathEnd {
+      // * Fourth Option: its like option 3 but we use onSuccess instead of onComplete
+      get {
+        parameter("id") { id =>
+          onSuccess(IssueApi.getIssue(id)) { ResponseHandler.handleEither }
+        }
+      }
+    }
   }
 
   private val docRouter: Route =

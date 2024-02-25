@@ -1,6 +1,6 @@
 package dive.poolack.errors
 
-final case class ErrorResponse(status: Boolean, message: String)
+import dive.poolack.ErrorResponse
 
 trait ThrowableError extends Throwable {
   val message: String = "default message"

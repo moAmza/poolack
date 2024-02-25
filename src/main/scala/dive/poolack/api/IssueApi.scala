@@ -38,4 +38,16 @@ object IssueApi {
     } else
       IssueRepo.insertIssue(issue).map(Right(_))
   }
+
+  // * Api implementation for Option 4:  Simply use Future[Either[T]]
+  def getIssue(
+      issueId: String
+  )(implicit ec: ExecutionContext): Future[Either[SimpleError, Issue]] = {
+    IssueRepo
+      .getIssue(issueId)
+      .map(_ match {
+        case Some(issue) => Right(issue)
+        case None        => Left(new SimpleError("Issue not found"))
+      })
+  }
 }
